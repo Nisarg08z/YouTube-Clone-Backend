@@ -53,20 +53,23 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Thumbnail is required")
     }
 
-    const videoFile = await uploadOnCloudinary(uploadvideoFileLocalPath)
+    const videoFile = await uploadOnCloudinary(uploadvideoFileLocalPath,{resource_type: 'video'})
     const thumbnail = await uploadOnCloudinary(uploadThumbnailLocalPath)
+
+    console.log("hii" , videoFile)
 
     const video = await Video.create({
         title,
         description,
         videoFile: videoFile.url,
         thumbnail: thumbnail.url,
+        duration: videoFile.duration,
         userId: req.user.id,
     })
 
     return res
     .status(201)
-    .json(new ApiResponse(true, "Video published successfully", video))
+    .json(new ApiResponse(true, "Video published successfully",video))
 })
 
 
