@@ -1,6 +1,5 @@
-import mongoose, {isValidObjectId} from "mongoose"
+import {isValidObjectId} from "mongoose"
 import {Video} from "../models/video.model.js"
-import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
@@ -38,22 +37,30 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     
     const { title, description } = req.body
-    const { file } = req
-
-    if (!file) {
-        throw new ApiError(400, "Video file is required")
-    }
 
     if (!title || !description) {
         throw new ApiError(400, "Title and description are required")
     }
 
-    const uploadedVideo = await uploadOnCloudinary(file.path, "videos")
+    const uploadvideoFileLocalPath = req.files?.videoFile[0]?.path;
+    const uploadThumbnailLocalPath = req.files?.thumbnail[0]?.path;
+
+    if(!uploadvideoFileLocalPath) {
+        throw new ApiError(400, "Video file is required")
+    }
+
+    if(!uploadThumbnailLocalPath) {
+        throw new ApiError(400, "Thumbnail is required")
+    }
+
+    const videoFile = await uploadOnCloudinary(uploadvideoFileLocalPath)
+    const thumbnail = await uploadOnCloudinary(uploadThumbnailLocalPath)
 
     const video = await Video.create({
         title,
         description,
-        url: uploadedVideo.secure_url,
+        videoFile: videoFile.url,
+        thumbnail: thumbnail.url,
         userId: req.user.id,
     })
 
