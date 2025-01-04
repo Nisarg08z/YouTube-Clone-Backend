@@ -61,22 +61,19 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid playlist or video ID");
     }
 
-    const playlist = await Playlist.findById(playlistId);
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        { $addToSet: { videos: videoId } },
+        { new: true }
+    );
 
-    if (!playlist) {
+    if (!updatedPlaylist) {
         throw new ApiError(404, "Playlist not found");
     }
 
-    if (playlist.videos.includes(videoId)) {
-        throw new ApiError(400, "Video already in playlist");
-    }
-
-    playlist.videos.push(videoId);
-    await playlist.save();
-
     return res
         .status(200)
-        .json(new ApiResponse(true, "Video added to playlist successfully", playlist));
+        .json(new ApiResponse(true, "Video added to playlist successfully", updatedPlaylist));
 });
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
