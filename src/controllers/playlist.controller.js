@@ -1,4 +1,4 @@
-import mongoose, {isValidObjectId} from "mongoose"
+import {isValidObjectId} from "mongoose"
 import {Playlist} from "../models/playlist.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -119,6 +119,28 @@ const deletePlaylist = asyncHandler(async (req, res) => {
         .json(new ApiResponse(true, "Playlist deleted successfully"));
 });
 
+const updatePlaylist = asyncHandler(async (req, res) => {
+    const { playlistId } = req.params;
+    const { name, description } = req.body;
+
+    if (!isValidObjectId(playlistId)) {
+        throw new ApiError(400, "Invalid playlist ID");
+    }
+
+    const playlist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        { $set: { name, description } },
+        { new: true }
+    );
+
+    if (!playlist) {
+        throw new ApiError(404, "Playlist not found");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(true, "Playlist updated successfully", playlist));
+});
 
 export {
     createPlaylist,
@@ -127,5 +149,5 @@ export {
     addVideoToPlaylist,
     removeVideoFromPlaylist,
     deletePlaylist,
-    
+    updatePlaylist
 }
