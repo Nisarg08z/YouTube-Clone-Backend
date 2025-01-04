@@ -26,7 +26,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         sort: { [sortBy]: sortType === "asc" ? 1 : -1 },
     }
 
-    const videos = await Video.paginate(filter, options)
+    const videos = await Video.aggregatePaginate(Video.aggregate([{ $match: filter }]), options);
 
     return res
     .status(200)
