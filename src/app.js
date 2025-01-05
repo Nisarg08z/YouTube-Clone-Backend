@@ -19,9 +19,11 @@ app.use(cookieParser())
 import userRouter from "./routes/user.route.js"
 import videoRouter from "./routes/video.route.js"
 import playlistRouter from "./routes/playlist.route.js"
+import tweetRouter from "./routes/tweet.route.js"
 
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/videos",videoRouter)
 app.use("/api/v1/playlist",playlistRouter)
+app.use("/api/v1/tweet",tweetRouter)
 
 export { app }
