@@ -13,7 +13,7 @@ const createTweet = asyncHandler(async (req, res) => {
 
     const tweet = await Tweet.create({
         content,
-        author: req.user.id,
+        owner: req.user.id,
     });
 
     return res
@@ -28,7 +28,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid user ID");
     }
 
-    const tweets = await Tweet.find({ author: userId }).populate("author", "name email");
+    const tweets = await Tweet.find({ owner: userId }).populate("owner", "fullName username");
 
     return res
         .status(200)
@@ -44,7 +44,7 @@ const updateTweet = asyncHandler(async (req, res) => {
     }
 
     const updatedTweet = await Tweet.findOneAndUpdate(
-        { _id: tweetId, author: req.user.id },
+        { _id: tweetId, owner: req.user.id },
         { $set: { content } },
         { new: true }
     );
@@ -67,7 +67,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
 
     const deletedTweet = await Tweet.findOneAndDelete({
         _id: tweetId,
-        author: req.user.id,
+        owner: req.user.id,
     });
 
     if (!deletedTweet) {
