@@ -36,7 +36,7 @@ const addComment = asyncHandler(async (req, res) => {
     const comment = await Comment.create({
         video: videoId,
         owner: req.user.id,
-        text,
+        content: text,
     });
 
     return res.status(201).json(new ApiResponse(true, "Comment added successfully", comment));
@@ -64,7 +64,7 @@ const updateComment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Comment text is required");
     }
 
-    comment.text = text;
+    comment.content = text;
     await comment.save();
 
     return res.status(200).json(new ApiResponse(true, "Comment updated successfully", comment));
