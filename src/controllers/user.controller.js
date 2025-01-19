@@ -114,15 +114,26 @@ const loginUser = asyncHandler(async (req, res) =>{
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
-    const options = {
+    const accessTokenOptions = {
         httpOnly: true,
-        secure: true
-    }
+        secure: false, // Use HTTPS only in production
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        sameSite: "Lax", // Required for cross-origin cookies
+      };
+      
+      const refreshTokenOptions = {
+        httpOnly: true,
+        secure: false, // Use HTTPS only in production
+        maxAge: 10 * 24 * 60 * 60 * 1000, // 10 days
+        sameSite: "Lax", // Required for cross-origin cookies
+      };
+      
 
+    console.log("hello")
     return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, accessTokenOptions)
+    .cookie("refreshToken", refreshToken, refreshTokenOptions)
     .json(
         new ApiResponse(
             200, 
