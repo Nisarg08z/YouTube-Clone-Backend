@@ -54,7 +54,7 @@ const registerUser = asyncHandler( async (req, res) => {
 
     const user = await User.create({
         fullName,
-        avatar: "https://res.cloudinary.com/dby0edrrn/image/upload/v1737217499/cgsf8wnhxr5s0z96lpvg.jpg",
+        avatar: "https://res.cloudinary.com/dby0edrrn/image/upload/v1737371517/file_r7uovt.png",
         coverImage: "https://res.cloudinary.com/dby0edrrn/image/upload/v1737217521/a1duxlv7ztfcnatupr0l.jpg",
         email, 
         password,
