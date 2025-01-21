@@ -7,31 +7,72 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-
-    const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc", userId } = req.query
-
-    const filter = {}
-
+    const {
+      page = 1,
+      limit = 10,
+      query,
+      sortBy = "createdAt",
+      sortType = "desc",
+      userId,
+    } = req.query;
+  
+    const filter = {};
+  
     if (query) {
-        filter.title = { $regex: query, $options: "i" }
+      filter.title = { $regex: query, $options: "i" };
     }
-
+  
     if (userId && isValidObjectId(userId)) {
-        filter.userId = userId 
+      filter.owner = userId; 
     }
-        
+  
     const options = {
-        page: parseInt(page, 10),
-        limit: parseInt(limit, 10),
-        sort: { [sortBy]: sortType === "asc" ? 1 : -1 },
-    }
-
-    const videos = await Video.aggregatePaginate(Video.aggregate([{ $match: filter }]), options);
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+      sort: { [sortBy]: sortType === "asc" ? 1 : -1 },
+    };
+  
+    const videos = await Video.aggregatePaginate(
+      Video.aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: "users", 
+            localField: "owner", 
+            foreignField: "_id",  
+            as: "uploader",  
+          },
+        },
+        {
+          $unwind: {
+            path: "$uploader",
+            preserveNullAndEmptyArrays: true, 
+          },
+        },
+        {
+          $project: {
+            title: 1,
+            description: 1,
+            thumbnail: 1,
+            videoFile: 1,
+            duration: 1,
+            views: 1,
+            isPublished: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            "uploader.fullName": 1, 
+            "uploader.avatar": 1,
+          },
+        },
+      ]),
+      options
+    );
 
     return res
-    .status(200)
-    .json(new ApiResponse(true, "Videos fetched successfully", videos))
-})
+      .status(200)
+      .json(new ApiResponse(true, "Videos fetched successfully", videos));
+  });
+  
 
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -64,7 +105,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
         videoFile: videoFile.url,
         thumbnail: thumbnail.url,
         duration: videoFile.duration,
-        userId: req.user.id,
+        owner: req.user.id,
     })
 
     return res
