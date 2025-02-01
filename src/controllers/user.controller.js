@@ -117,14 +117,14 @@ const loginUser = asyncHandler(async (req, res) =>{
     const accessTokenOptions = {
         httpOnly: true,
         secure: false, // Use HTTPS only in production
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        maxAge: 24 * 60 * 60 * 10000, // 1 day
         sameSite: "Lax", // Required for cross-origin cookies
       };
       
       const refreshTokenOptions = {
         httpOnly: true,
         secure: false, // Use HTTPS only in production
-        maxAge: 10 * 24 * 60 * 60 * 1000, // 10 days
+        maxAge: 10 * 24 * 60 * 60 * 10000, // 10 days
         sameSite: "Lax", // Required for cross-origin cookies
       };
       
@@ -132,8 +132,18 @@ const loginUser = asyncHandler(async (req, res) =>{
     console.log("hello")
     return res
     .status(200)
-    .cookie("accessToken", accessToken, accessTokenOptions)
-    .cookie("refreshToken", refreshToken, refreshTokenOptions)
+    .cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+        maxAge: 1 * 24 * 60 * 60 * 1000,
+    })
+    .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
     .json(
         new ApiResponse(
             200, 
