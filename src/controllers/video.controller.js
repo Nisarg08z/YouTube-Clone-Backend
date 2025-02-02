@@ -62,6 +62,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
             updatedAt: 1,
             "uploader.fullName": 1, 
             "uploader.avatar": 1,
+            "uploader.username": 1,
           },
         },
       ]),
