@@ -32,10 +32,12 @@ router
 
 router
     .route("/:videoId")
-    .get(verifyJWT,getVideoById)
+    .get(getVideoById)
     .delete(verifyJWT,deleteVideo)
     .patch(upload.single("thumbnail"),verifyJWT, updateVideo);
 
 router.route("/toggle/publish/:videoId").patch(verifyJWT,togglePublishStatus);
+
+router.route("/user/:userId").get(getAllVideos)
 
 export default router

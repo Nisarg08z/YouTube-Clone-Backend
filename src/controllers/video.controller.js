@@ -1,4 +1,4 @@
-import {isValidObjectId} from "mongoose"
+import {mongoose} from "mongoose"
 import {Video} from "../models/video.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -17,14 +17,16 @@ const getAllVideos = asyncHandler(async (req, res) => {
     } = req.query;
   
     const filter = {};
-  
+
     if (query) {
       filter.title = { $regex: query, $options: "i" };
     }
-  
-    if (userId && isValidObjectId(userId)) {
-      filter.owner = userId; 
+
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      filter.owner = new mongoose.Types.ObjectId(userId);
     }
+
+    console.log("Filter used in aggregation:", filter);
   
     const options = {
       page: parseInt(page, 10),
@@ -69,10 +71,12 @@ const getAllVideos = asyncHandler(async (req, res) => {
       options
     );
 
+    console.log("Fetched Videos:", videos); 
+
     return res
       .status(200)
       .json(new ApiResponse(true, "Videos fetched successfully", videos));
-  });
+});
   
 
 
@@ -210,5 +214,5 @@ export {
     getVideoById,
     updateVideo,
     deleteVideo,
-    togglePublishStatus
+    togglePublishStatus,
 }
