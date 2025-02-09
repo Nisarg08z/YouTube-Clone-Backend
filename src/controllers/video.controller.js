@@ -1,4 +1,4 @@
-import {mongoose} from "mongoose"
+import {mongoose, isValidObjectId} from "mongoose"
 import {Video} from "../models/video.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -120,22 +120,50 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 
 const getVideoById = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
 
-    const { videoId } = req.params
+  if (!isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid video ID");
+  }
 
-    if (!isValidObjectId(videoId)) {
-        throw new ApiError(400, "Invalid video ID")
-    }
+  const video = await Video.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(videoId) } },
+      {
+          $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "uploader",
+          },
+      },
+      { $unwind: { path: "$uploader", preserveNullAndEmptyArrays: true } },
+      {
+          $project: {
+              title: 1,
+              description: 1,
+              thumbnail: 1,
+              videoFile: 1,
+              duration: 1,
+              views: 1,
+              isPublished: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              "uploader.fullName": 1,
+              "uploader.avatar": 1,
+              "uploader.username": 1,
+          },
+      },
+  ]);
 
-    const video = await Video.findById(videoId)
+  if (!video || video.length === 0) {
+      throw new ApiError(404, "Video not found");
+  }
 
-    if (!video) {
-        throw new ApiError(404, "Video not found")
-    }
-    return res
-    .status(200)
-    .json(new ApiResponse(true, "Video fetched successfully", video))
-})
+  return res
+      .status(200)
+      .json(new ApiResponse(true, "Video fetched successfully", video[0]));
+});
+
 
 
 const updateVideo = asyncHandler(async (req, res) => {
@@ -207,6 +235,27 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(true, "Video publish status updated", video))
 })
 
+//Increase Video Views
+const increaseViewCount = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!isValidObjectId(videoId)) {
+      throw new ApiError(400, "Invalid video ID");
+  }
+
+  const updatedVideo = await Video.findByIdAndUpdate(
+      videoId,
+      { $inc: { views: 1 } },
+      { new: true }
+  );
+
+  if (!updatedVideo) {
+      throw new ApiError(404, "Video not found");
+  }
+
+  return res.status(200).json(new ApiResponse(true, "View count updated", { views: updatedVideo.views }));
+});
+
 
 export {
     getAllVideos,
@@ -215,4 +264,5 @@ export {
     updateVideo,
     deleteVideo,
     togglePublishStatus,
+    increaseViewCount
 }

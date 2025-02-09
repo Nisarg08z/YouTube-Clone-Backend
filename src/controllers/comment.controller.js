@@ -12,14 +12,18 @@ const getVideoComments = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid video ID");
     }
 
+    const totalComments = await Comment.countDocuments({ video: videoId });
+
     const comments = await Comment.find({ video: videoId })
         .populate("owner", "name email")
         .skip((page - 1) * limit)
         .limit(Number(limit))
         .sort({ createdAt: -1 });
 
-    return res.status(200).json(new ApiResponse(true, "Comments fetched successfully", comments));
+    return res.status(200).json(new ApiResponse(true, "Comments fetched successfully", { comments, totalComments }));
 });
+
+
 
 const addComment = asyncHandler(async (req, res) => {
     const { videoId } = req.params;

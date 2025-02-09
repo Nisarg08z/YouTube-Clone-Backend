@@ -6,6 +6,7 @@ import {
     publishAVideo,
     togglePublishStatus,
     updateVideo,
+    increaseViewCount
 } from "../controllers/video.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 import {upload} from "../middlewares/multer.middleware.js"
@@ -39,5 +40,7 @@ router
 router.route("/toggle/publish/:videoId").patch(verifyJWT,togglePublishStatus);
 
 router.route("/user/:userId").get(getAllVideos)
+
+router.route("/views/:videoId").patch(increaseViewCount);
 
 export default router
