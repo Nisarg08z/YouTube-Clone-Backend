@@ -12,6 +12,8 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid video ID");
     }
 
+    console.log(userId)
+
     const existingLike = await Like.findOne({ video: videoId, likedBy: userId });
 
     if (existingLike) {
@@ -19,9 +21,15 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         return res.status(200).json(new ApiResponse(true, "Video unliked successfully"));
     }
 
-    const newLike = await Like.create({ video: videoId, likedBy: userId });
-    return res.status(201).json(new ApiResponse(true, "Video liked successfully", newLike));
+    await Like.updateOne(
+        { video: videoId, likedBy: userId },
+        { $setOnInsert: { video: videoId, likedBy: userId } },
+        { upsert: true }
+    );
+
+    return res.status(201).json(new ApiResponse(true, "Video liked successfully"));
 });
+
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
