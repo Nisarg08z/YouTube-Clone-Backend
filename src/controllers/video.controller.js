@@ -122,20 +122,14 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
-    const userId = req.user?._id; // Get current user ID (if authenticated)
 
     if (!isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid video ID");
     }
 
-    // Check if the user has liked the video
-    const userLikeOrNot = userId ? !!(await Like.exists({ video: videoId, likedBy: userId })) : false;
-
-    // Fetch video details using aggregation
-    const videoData = await Video.aggregate([
+    const video = await Video.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(videoId) } },
 
-        // Lookup uploader details
         {
             $lookup: {
                 from: "users",
@@ -146,7 +140,6 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         { $unwind: { path: "$uploader", preserveNullAndEmptyArrays: true } },
 
-        // Lookup likes count
         {
             $lookup: {
                 from: "likes",
@@ -165,7 +158,6 @@ const getVideoById = asyncHandler(async (req, res) => {
             },
         },
 
-        // Project final fields
         {
             $project: {
                 title: 1,
@@ -185,15 +177,11 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
     ]);
 
-    if (!videoData || videoData.length === 0) {
+    if (!video || video.length === 0) {
         throw new ApiError(404, "Video not found");
     }
 
-    console.log("User Like Status:", userLikeOrNot);
-
-    const video = { ...videoData[0], isLikedByCurrentUser: userLikeOrNot };
-
-    return res.status(200).json(new ApiResponse(true, "Video fetched successfully", video));
+    return res.status(200).json(new ApiResponse(true, "Video fetched successfully", video[0]));
 });
 
 
