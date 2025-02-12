@@ -1,4 +1,4 @@
-import { isValidObjectId } from "mongoose";
+import mongoose,{ isValidObjectId } from "mongoose";
 import { Like } from "../models/like.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -92,12 +92,59 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 const getLikedVideos = asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
-    const likedVideos = await Like.find({ likedBy: userId, video: { $exists: true } })
-        .populate("video", "title description")
-        .sort({ createdAt: -1 });
+    const likedVideos = await Like.aggregate([
+        {
+            $match: { likedBy: new mongoose.Types.ObjectId(userId), video: { $exists: true } },
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "video",
+                foreignField: "_id",
+                as: "video",
+            },
+        },
+        {
+            $unwind: "$video",
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "video.owner",
+                foreignField: "_id",
+                as: "uploader",
+            },
+        },
+        {
+            $unwind: "$uploader",
+        },
+        {
+            $project: {
+                _id: "$video._id",
+                videoFile: "$video.videoFile",
+                thumbnail: "$video.thumbnail",
+                title: "$video.title",
+                description: "$video.description",
+                duration: "$video.duration",
+                views: "$video.views",
+                isPublished: "$video.isPublished",
+                createdAt: "$video.createdAt",
+                updatedAt: "$video.updatedAt",
+                likedAt: "$createdAt",
+                "uploader.fullName": 1,
+                "uploader.avatar": 1,
+                "uploader.username": 1,
+            },
+        },
+        { $sort: { likedAt: -1 } }, // Sorting by the liked timestamp
+    ]);
 
-    return res.status(200).json(new ApiResponse(true, "Liked videos fetched successfully", likedVideos));
+    return res
+        .status(200)
+        .json(new ApiResponse(true, "Liked videos fetched successfully", likedVideos));
 });
+
+
 
 export {
     toggleCommentLike,
