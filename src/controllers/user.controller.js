@@ -497,28 +497,34 @@ const addWatchHistory = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Video ID is required" });
     }
 
-    const user = await User.findById(userId);
+    await User.findByIdAndUpdate(userId, {
+        $pull: { watchHistory: videoId },
+    });
 
-    if (!user) {
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+            $push: { watchHistory: { $each: [videoId], $position: 0 } },
+        },
+        { new: true }
+    );
+
+    if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
     }
 
-    user.watchHistory = user.watchHistory.filter(id => id.toString() !== videoId);
-
-    user.watchHistory.unshift(videoId);
-
-    if (user.watchHistory.length > 50) {
-        user.watchHistory.pop();
+    if (updatedUser.watchHistory.length > 50) {
+        updatedUser.watchHistory = updatedUser.watchHistory.slice(0, 50);
+        await updatedUser.save();
     }
-
-    await user.save();
 
     return res.status(200).json({
         message: "Video added to watch history",
-        watchHistory: user.watchHistory,
+        watchHistory: updatedUser.watchHistory,
     });
-
 });
+
+
 
 
 export {
