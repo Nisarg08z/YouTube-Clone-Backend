@@ -1,4 +1,4 @@
-import {isValidObjectId} from "mongoose"
+import mongoose, {isValidObjectId} from "mongoose"
 import {Playlist} from "../models/playlist.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -43,16 +43,113 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid playlist ID");
     }
 
-    const playlist = await Playlist.findById(playlistId);
+    const playlist = await Playlist.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(playlistId) } },
 
-    if (!playlist) {
+        // Lookup owner details
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+            },
+        },
+        { $unwind: { path: "$ownerDetails", preserveNullAndEmptyArrays: true } },
+
+        // Lookup videos and populate uploader details
+        {
+            $lookup: {
+                from: "videos",
+                localField: "videos",
+                foreignField: "_id",
+                as: "videoDetails",
+            },
+        },
+
+        { $unwind: { path: "$videoDetails", preserveNullAndEmptyArrays: true } },
+
+        // Lookup uploader details
+        {
+            $lookup: {
+                from: "users",
+                localField: "videoDetails.owner",
+                foreignField: "_id",
+                as: "videoDetails.uploader",
+            },
+        },
+        { $unwind: { path: "$videoDetails.uploader", preserveNullAndEmptyArrays: true } },
+
+        // Group videos back into an array
+        {
+            $group: {
+                _id: "$_id",
+                name: { $first: "$name" },
+                description: { $first: "$description" },
+                createdAt: { $first: "$createdAt" },
+                updatedAt: { $first: "$updatedAt" },
+                owner: {
+                    $first: {
+                        username: "$ownerDetails.username",
+                        fullName: "$ownerDetails.fullName",
+                        avatar: "$ownerDetails.avatar",
+                    },
+                },
+                videos: {
+                    $push: {
+                        _id: "$videoDetails._id",
+                        videoFile: "$videoDetails.videoFile",
+                        thumbnail: "$videoDetails.thumbnail",
+                        title: "$videoDetails.title",
+                        description: "$videoDetails.description",
+                        duration: "$videoDetails.duration",
+                        views: "$videoDetails.views",
+                        isPublished: "$videoDetails.isPublished",
+                        createdAt: "$videoDetails.createdAt",
+                        updatedAt: "$videoDetails.updatedAt",
+                        uploader: {
+                            username: "$videoDetails.uploader.username",
+                            fullName: "$videoDetails.uploader.fullName",
+                            avatar: "$videoDetails.uploader.avatar",
+                        },
+                    },
+                },
+            },
+        },
+
+        // Project only necessary fields
+        {
+            $project: {
+                name: 1,
+                description: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                owner: 1,
+                videos: {
+                    _id: 1,
+                    videoFile: 1,
+                    thumbnail: 1,
+                    title: 1,
+                    description: 1,
+                    duration: 1,
+                    views: 1,
+                    isPublished: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    uploader: 1,
+                },
+            },
+        },
+    ]);
+
+    if (!playlist || playlist.length === 0) {
         throw new ApiError(404, "Playlist not found");
     }
 
-    return res
-        .status(200)
-        .json(new ApiResponse(true, "Playlist fetched successfully", playlist));
+    return res.status(200).json(new ApiResponse(true, "Playlist fetched successfully", playlist[0]));
 });
+
+
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const { playlistId, videoId } = req.params;
