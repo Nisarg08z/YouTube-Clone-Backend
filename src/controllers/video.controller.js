@@ -10,7 +10,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js"
 const getAllVideos = asyncHandler(async (req, res) => {
     const {
         page = 1,
-        limit = 10,
+        limit = 100,
         query,
         sortBy = "createdAt",
         sortType = "desc",
