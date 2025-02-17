@@ -72,8 +72,29 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
         );
 });
 
+const isChannelFollowed = asyncHandler(async (req, res) => {
+    const { channelId } = req.params;
+    const userId = req.user.id;
+
+    if (!isValidObjectId(channelId)) {
+        throw new ApiError(400, "Invalid channel ID");
+    }
+
+    const existingFollow = await Subscription.findOne({ channel: channelId, subscriber: userId });
+
+    //console.log("--------",existingFollow)
+
+    if (existingFollow) {
+        return res.status(200).json(new ApiResponse(true, "channel already Followed by you"));
+    }
+
+    return res.status(200).json(new ApiResponse(false, "channel not Followed by you"));
+
+})
+
 export {
     toggleSubscription,
     getUserChannelSubscribers,
     getSubscribedChannels,
+    isChannelFollowed
 };
