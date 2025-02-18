@@ -28,7 +28,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid user ID");
     }
 
-    const tweets = await Tweet.find({ owner: userId }).populate("owner", "fullName username");
+    const tweets = await Tweet.find({ owner: userId }).populate("owner", "fullName username avatar");
 
     return res
         .status(200)
