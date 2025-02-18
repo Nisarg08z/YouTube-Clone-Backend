@@ -27,7 +27,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         filter.owner = new mongoose.Types.ObjectId(userId);
     }
 
-    console.log("Filter used in aggregation:", filter);
+    //console.log("Filter used in aggregation:", filter);
 
     const options = {
         page: parseInt(page, 10),
@@ -73,7 +73,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         options
     );
 
-    console.log("Fetched Videos:", videos);
+    //console.log("Fetched Videos:", videos);
 
     return res
         .status(200)

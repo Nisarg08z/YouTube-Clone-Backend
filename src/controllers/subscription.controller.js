@@ -45,32 +45,39 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid channel ID");
     }
 
-    const subscribers = await Subscription.find({ channel: channelId }).populate(
-        "subscriber",
-        "name email"
-    );
+    const subscribers = await Subscription.find({ channel: channelId })
+        .populate("subscriber", "fullName username avatar")
+        .lean();
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(true, "Channel subscribers fetched successfully", subscribers)
-        );
+    for (let subscriber of subscribers) {
+        const count = await Subscription.countDocuments({ subscriber: subscriber.subscriber._id });
+        subscriber.subscriber.subscriptionsCount = count; 
+    }
+
+    return res.status(200).json(
+        new ApiResponse(true, "Channel subscribers fetched successfully", subscribers)
+    );
 });
+
+
 
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const subscriberId = req.user.id;
 
-    const subscriptions = await Subscription.find({ subscriber: subscriberId }).populate(
-        "channel",
-        "name email"
-    );
+    const subscriptions = await Subscription.find({ subscriber: subscriberId })
+        .populate("channel", "fullName username avatar")
+        .lean(); 
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(true, "Subscribed channels fetched successfully", subscriptions)
-        );
+    for (let subscription of subscriptions) {
+        const count = await Subscription.countDocuments({ channel: subscription.channel._id });
+        subscription.channel.subscribersCount = count; 
+    }
+
+    return res.status(200).json(
+        new ApiResponse(true, "Subscribed channels fetched successfully", subscriptions)
+    );
 });
+
 
 const isChannelFollowed = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
