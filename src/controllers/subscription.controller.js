@@ -45,21 +45,20 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid channel ID");
     }
 
+    // Get all subscribers of the channel
     const subscribers = await Subscription.find({ channel: channelId })
         .populate("subscriber", "fullName username avatar")
         .lean();
 
+    // Fetch the number of followers for each subscriber
     for (let subscriber of subscribers) {
-        const count = await Subscription.countDocuments({ subscriber: subscriber.subscriber._id });
-        subscriber.subscriber.subscriptionsCount = count; 
+        subscriber.subscriber.subscribersCount = await Subscription.countDocuments({ channel: subscriber.subscriber._id });
     }
 
     return res.status(200).json(
         new ApiResponse(true, "Channel subscribers fetched successfully", subscribers)
     );
 });
-
-
 
 const getSubscribedChannels = asyncHandler(async (req, res) => {
     const subscriberId = req.user.id;
