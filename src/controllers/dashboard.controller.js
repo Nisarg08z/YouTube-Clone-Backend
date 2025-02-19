@@ -13,10 +13,6 @@ const getChannelStats = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid channel ID");
     }
 
-    const totalVideos = await Video.countDocuments({
-        channel: channelId
-    });
-
     const totalSubscribers = await Subscription.countDocuments({
         channel: channelId
     });
@@ -24,29 +20,25 @@ const getChannelStats = asyncHandler(async (req, res) => {
     const totalLikes = await Like.countDocuments({
         video: {
             $in: (await Video.find({
-                channel: channelId
+                owner: channelId
             }).select("_id"))
         }
     });
 
     const totalViews = await Video.aggregate([
         {
-            $match: {
-                channel: mongoose.Types.ObjectId(channelId)
-            }
+            $match: { owner: new mongoose.Types.ObjectId(channelId) }
         },
         {
             $group: {
-                _id: null, totalViews: {
-                    $sum: "$views"
-                }
+                _id: null,
+                totalViews: { $sum: { $ifNull: ["$views", 0] } }
             }
-        },
+        }
     ]);
-
+    
     return res.status(200).json(
         new ApiResponse(true, "Channel stats fetched successfully", {
-            totalVideos,
             totalSubscribers,
             totalLikes,
             totalViews: totalViews[0]?.totalViews || 0,
@@ -62,16 +54,51 @@ const getChannelVideos = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid channel ID");
     }
 
-    const videos = await Video.find({ channel: channelId })
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit))
-        .select("title description views likes createdAt");
+    const videos = await Video.aggregate([
+        { $match: { owner: new mongoose.Types.ObjectId(channelId) } },
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * parseInt(limit) },
+        { $limit: parseInt(limit) },
+
+        {
+            $lookup: {
+                from: "likes",
+                let: { videoId: "$_id" },
+                pipeline: [
+                    { $match: { $expr: { $eq: ["$video", "$$videoId"] } } },
+                    { $project: { likedBy: 1 } },
+                ],
+                as: "likes",
+            },
+        },
+
+        {
+            $addFields: {
+                likesCount: { $size: "$likes" },
+            },
+        },
+
+        {
+            $project: {
+                title: 1,
+                description: 1,
+                thumbnail: 1,
+                videoFile: 1,
+                duration: 1,
+                views: 1,
+                isPublished: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                likesCount: 1,
+            },
+        },
+    ]);
 
     return res.status(200).json(
         new ApiResponse(true, "Channel videos fetched successfully", videos)
     );
 });
+
 
 export {
     getChannelStats,
