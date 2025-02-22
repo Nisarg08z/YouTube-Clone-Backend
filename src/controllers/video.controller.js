@@ -189,33 +189,45 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 
 
-const updateVideo = asyncHandler(async (req, res) => {
 
-    const { videoId } = req.params
-    const { title, description, thumbnail } = req.body
+
+const updateVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    const { title, description } = req.body;
+
+    console.log("📩 Received Body:", req.body);
+    console.log("📂 Received File:", req.file); // Debugging file upload
 
     if (!isValidObjectId(videoId)) {
-        throw new ApiError(400, "Invalid video ID")
+        throw new ApiError(400, "Invalid video ID");
     }
 
-    const updatedVideo = await Video.findByIdAndUpdate(
-        videoId,
-        {
-            $set: { title, description, thumbnail }
-        },
-        {
-            new: true
-        }
-    );
+    let thumbnailUrl = null;
+
+    if (req.file) {
+        const uploadThumbnailLocalPath = req.file.path;
+        console.log("🚀 Processing new thumbnail:", uploadThumbnailLocalPath);
+
+        const uploadedThumbnail = await uploadOnCloudinary(uploadThumbnailLocalPath);
+        thumbnailUrl = uploadedThumbnail.url;
+    } else {
+        console.log("⚠ No new thumbnail received.");
+    }
+
+    const updatedFields = { title, description };
+    if (thumbnailUrl) updatedFields.thumbnail = thumbnailUrl; // Update only if a new thumbnail exists
+
+    const updatedVideo = await Video.findByIdAndUpdate(videoId, { $set: updatedFields }, { new: true });
 
     if (!updatedVideo) {
-        throw new ApiError(404, "Video not found")
+        throw new ApiError(404, "Video not found");
     }
 
-    return res
-        .status(200)
-        .json(new ApiResponse(true, "Video updated successfully", updatedVideo))
-})
+    return res.status(200).json(new ApiResponse(true, "Video updated successfully", updatedVideo));
+});
+
+
+
 
 
 const deleteVideo = asyncHandler(async (req, res) => {
