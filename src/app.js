@@ -34,4 +34,9 @@ app.use("/api/v1/comment",commentRouter)
 app.use("/api/v1/like",likeRouter)
 app.use('/api/v1/dashboard',deshboardRouter)
 
+app.get("/", (req, res) => {
+    res.json({ message: "Server is working!" });
+});
+
+
 export { app }
