@@ -24,14 +24,20 @@ const uploadOnCloudinary = async (localFilePath) => {
 
 const deleteFromCloudinary = async (publicId) => {
     try {
-        const result = await cloudinary.uploader.destroy(publicId)
-        if (result.result !== "ok") {
-            throw new Error("Failed to delete the image from Cloudinary")
+        const result = await cloudinary.uploader.destroy(publicId);
+
+        if (result.result === "not found") {
+            return { message: "Image not found, no deletion needed" };
         }
+        if (result.result !== "ok") {
+            throw new Error("Failed to delete the image from Cloudinary");
+        }
+        return { message: "Image deleted successfully" };
     } catch (error) {
-        console.error("Cloudinary Deletion Error:", error)
-        throw new ApiError(500, "Error while deleting old Image")
+        console.error("Cloudinary Deletion Error:", error);
+        throw new Error("Error while deleting old Image");
     }
-}
+};
+
 
 export {uploadOnCloudinary, deleteFromCloudinary}
