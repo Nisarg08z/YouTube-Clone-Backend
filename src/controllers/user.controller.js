@@ -116,44 +116,26 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const accessTokenOptions = {
         httpOnly: true,
-        secure: false, // Use HTTPS only in production
-        maxAge: 24 * 60 * 60 * 10000, // 1 day
-        sameSite: "Lax", // Required for cross-origin cookies
+        secure: process.env.NODE_ENV === "production", 
+        sameSite: "None", 
+        maxAge: 24 * 60 * 60 * 1000
     };
 
     const refreshTokenOptions = {
         httpOnly: true,
-        secure: false, // Use HTTPS only in production
-        maxAge: 10 * 24 * 60 * 60 * 10000, // 10 days
-        sameSite: "Lax", // Required for cross-origin cookies
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "None",
+        maxAge: 7 * 24 * 60 * 60 * 1000
     };
 
 
-    console.log("hello")
     return res
         .status(200)
-        .cookie('accessToken', accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'Strict',
-            maxAge: 1 * 24 * 60 * 60 * 1000,
-        })
-        .cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'Strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        })
-        .json(
-            new ApiResponse(
-                200,
-                {
-                    user: loggedInUser, accessToken, refreshToken
-                },
-                "User logged In Successfully"
-            )
-        )
-
+        .cookie("accessToken", accessToken, accessTokenOptions)
+        .cookie("refreshToken", refreshToken, refreshTokenOptions)
+        .json(new ApiResponse(200, {
+            user: loggedInUser, accessToken, refreshToken
+        }, "User logged In Successfully"));
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -480,7 +462,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                 "uploader.username": 1,
             },
         },
-        { $sort: { watchedAt: -1 } }, 
+        { $sort: { watchedAt: -1 } },
     ]);
 
     return res
