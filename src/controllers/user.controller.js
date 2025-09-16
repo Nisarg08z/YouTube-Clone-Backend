@@ -151,15 +151,17 @@ const logoutUser = asyncHandler(async (req, res) => {
         }
     )
 
-    const options = {
+    const isProd = process.env.NODE_ENV === "production";
+    const clearOptions = {
         httpOnly: true,
-        secure: true
+        secure: isProd,
+        sameSite: "None",
     }
 
     return res
         .status(200)
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
+        .clearCookie("accessToken", clearOptions)
+        .clearCookie("refreshToken", clearOptions)
         .json(new ApiResponse(200, {}, "User logged Out"))
 })
 
@@ -187,17 +189,26 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         }
 
-        const options = {
+        const isProd = process.env.NODE_ENV === "production";
+        const accessTokenOptions = {
             httpOnly: true,
-            secure: true
+            secure: isProd,
+            sameSite: "None",
+            maxAge: 24 * 60 * 60 * 1000,
+        }
+        const refreshTokenOptions = {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: "None",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         }
 
         const { accessToken, newRefreshToken } = await generateAccessAndRefereshTokens(user._id)
 
         return res
             .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefreshToken, options)
+            .cookie("accessToken", accessToken, accessTokenOptions)
+            .cookie("refreshToken", newRefreshToken, refreshTokenOptions)
             .json(
                 new ApiResponse(
                     200,
